@@ -102,6 +102,5 @@ contract Airdrop  {
         emit Kill(owner);
         
         selfdestruct(payable(owner));
-
     }
 }
