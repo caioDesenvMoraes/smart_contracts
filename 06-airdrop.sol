@@ -7,16 +7,15 @@ contract Airdrop  {
 
     // Using Libs
 
-    // Structs
+    // struct
 
-    // Enum
+    // enum
     enum Status { ACTIVE, PAUSED, CANCELLED } // mesmo que uint8
-
 
     // Properties
     address private owner;
     address public tokenAddress;
-    uint256 private maxSubscribers = 10;
+    uint256 private maxSubscribers = 5;
     address[] private subscribers;
     Status contractState; 
 
@@ -26,22 +25,27 @@ contract Airdrop  {
         _;
     }
 
+    modifier isActive() {
+        require(contractState == Status.ACTIVE, "the contract is not active");
+        _;
+    }
+
     // Events
-    event NewSubscriber(address beneficiary, uint amount);
+    event winnersAirdrop(address beneficiary, uint amount);
     event Kill(address owner);
 
     // Constructor
     constructor(address token) {
         owner = msg.sender;
         tokenAddress = token;
-        contractState = Status.PAUSED;
+        contractState = Status.ACTIVE;
     }
 
 
     // Public Functions
-    function subscribe() public returns(bool) {
-        require(subscribers.length < 10, "maximum number of addresses");
-        require(hasSubscribed(msg.sender));
+    function subscribe() public isActive returns(bool) {
+        require(subscribers.length < maxSubscribers, "maximum number of addresses");
+        require(hasSubscribed(msg.sender)) ;
 
         subscribers.push(msg.sender);
 
@@ -50,7 +54,15 @@ contract Airdrop  {
         return true;
     }
 
-    function state() public view returns(Status) {
+    function modifyStatus(Status status) public isOwner returns(bool) {
+        require(contractState != status, "this is your current state");
+
+        contractState = status;
+
+        return true;
+    }
+
+    function getState() public view returns(Status) {
         return contractState;
     }
 
@@ -71,7 +83,7 @@ contract Airdrop  {
             require(subscribers[i] != address(0));
             require(CryptoToken(tokenAddress).transfer(subscribers[i], amountToTransfer));
 
-            emit NewSubscriber(subscribers[i], amountToTransfer);
+            emit winnersAirdrop(subscribers[i], amountToTransfer);
         }
 
         return true;
@@ -87,10 +99,9 @@ contract Airdrop  {
 
     // Kill
     function kill() public isOwner {
+        emit Kill(owner);
+        
         selfdestruct(payable(owner));
 
-        emit Kill(owner);
     }
-    
-    
 }
